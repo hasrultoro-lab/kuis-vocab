@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun English & Math Quiz!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+            transform: scale(1);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Colors for Answers */
+        .correct-answer {
+            background-color: #10B981 !important; /* Tailwind Emerald 500 */
+            color: white !important;
+            border-color: #059669 !important;
+            animation: bounce 0.5s ease;
+        }
+
+        .wrong-answer {
+            background-color: #EF4444 !important; /* Tailwind Red 500 */
+            color: white !important;
+            border-color: #DC2626 !important;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased p-4 md:p-8 flex items-center justify-center">
+
+    <!-- Main App Container -->
+    <div id="app" class="w-full max-w-2xl mx-auto glass-panel overflow-hidden relative">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="p-8 text-center fade-in flex flex-col items-center justify-center min-h-[400px]">
+            <div class="text-6xl mb-4">🚀</div>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-500 mb-4">
+                Smart Quiz SMP!
+            </h1>
+            <p class="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+                Uji kemampuan Bahasa Inggris dan Matematika (1-100) kamu di sini. Siap untuk mendapat nilai 100?
+            </p>
+            <button onclick="startQuiz()" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                Mulai Kuis Sekarang!
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden flex flex-col h-full fade-in">
+            <!-- Header / Progress -->
+            <div class="bg-gray-50 border-b p-4 flex justify-between items-center rounded-t-3xl">
+                <span id="question-category" class="text-sm font-bold uppercase tracking-wider text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                    Category
+                </span>
+                <span id="question-counter" class="font-bold text-gray-500">
+                    Soal 1 / 20
+                </span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 h-2">
+                <div id="progress-bar" class="bg-gradient-to-r from-blue-400 to-purple-500 h-2 transition-all duration-300 w-0"></div>
+            </div>
+
+            <!-- Question Content -->
+            <div class="p-6 md:p-8 flex-grow flex flex-col justify-center">
+                <h2 id="question-text" class="text-xl md:text-2xl font-bold text-gray-800 mb-6 text-center leading-snug">
+                    Loading question...
+                </h2>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-3 md:gap-4 mt-4">
+                    <!-- Options will be injected here via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden p-8 text-center fade-in flex flex-col items-center justify-center min-h-[400px]">
+            <div id="result-emoji" class="text-6xl mb-4">🏆</div>
+            <h2 class="text-3xl font-extrabold text-gray-800 mb-2">Kuis Selesai!</h2>
+            <p id="result-message" class="text-xl text-gray-600 mb-6">Kerja bagus!</p>
+            
+            <div class="bg-gray-100 rounded-2xl p-6 w-full max-w-sm mx-auto mb-8 shadow-inner">
+                <div class="text-sm text-gray-500 font-bold uppercase mb-1">Skor Akhir Kamu</div>
+                <div id="final-score" class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                    0%
+                </div>
+                <div id="score-details" class="text-md font-semibold text-gray-600 mt-2">
+                    Benar 0 dari 20
+                </div>
+            </div>
+
+            <button onclick="resetQuiz()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                Main Lagi! 🔄
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // Data Soal (20 Soal)
+        const quizData = [
+            // Vocabulary (1-10)
+            {
+                type: "Vocabulary",
+                question: "Apa arti dari ungkapan 'good morning'?",
+                options: [
+                    { text: "selamat pagi", isCorrect: true },
+                    { text: "selamat malam", isCorrect: false },
+                    { text: "selamat siang", isCorrect: false },
+                    { text: "sampai jumpa", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "Jika ingin bertanya kabar temanmu, gunakan ungkapan...",
+                options: [
+                    { text: "What is your name?", isCorrect: false },
+                    { text: "How are you?", isCorrect: true },
+                    { text: "Where are you from?", isCorrect: false },
+                    { text: "How old are you?", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "Jawaban yang tepat untuk 'thank you' adalah...",
+                options: [
+                    { text: "I'm fine.", isCorrect: false },
+                    { text: "You're welcome.", isCorrect: true },
+                    { text: "See you later.", isCorrect: false },
+                    { text: "Sorry.", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "Apa arti dari 'nice to meet you'?",
+                options: [
+                    { text: "senang bertemu denganmu", isCorrect: true },
+                    { text: "siapa namamu?", isCorrect: false },
+                    { text: "saya baik-baik saja", isCorrect: false },
+                    { text: "sampai jumpa nanti", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "Ungkapan 'good night' digunakan ketika...",
+                options: [
+                    { text: "bertemu di pagi hari", isCorrect: false },
+                    { text: "berpisah untuk tidur di malam hari", isCorrect: true },
+                    { text: "bertemu di sore hari", isCorrect: false },
+                    { text: "memperkenalkan diri", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "'Where are you from?' digunakan untuk menanyakan...",
+                options: [
+                    { text: "Umur", isCorrect: false },
+                    { text: "Kabar", isCorrect: false },
+                    { text: "Asal daerah", isCorrect: true },
+                    { text: "Nama", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "Bahasa Inggris dari 'memperkenalkan' adalah...",
+                options: [
+                    { text: "live", isCorrect: false },
+                    { text: "name", isCorrect: false },
+                    { text: "friend", isCorrect: false },
+                    { text: "introduce", isCorrect: true }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "Jawaban untuk 'How old are you?' adalah...",
+                options: [
+                    { text: "I live in East Java.", isCorrect: false },
+                    { text: "I am twelve years old.", isCorrect: true },
+                    { text: "My name is Ahmad.", isCorrect: false },
+                    { text: "I am fine.", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "'Permisi' dalam bahasa Inggris adalah...",
+                options: [
+                    { text: "excuse me", isCorrect: true },
+                    { text: "welcome", isCorrect: false },
+                    { text: "please", isCorrect: false },
+                    { text: "take care", isCorrect: false }
+                ]
+            },
+            {
+                type: "Vocabulary",
+                question: "'See you later' artinya...",
+                options: [
+                    { text: "Selamat datang", isCorrect: false },
+                    { text: "Sampai jumpa nanti", isCorrect: true },
+                    { text: "Jaga diri baik-baik", isCorrect: false },
+                    { text: "Selamat tinggal", isCorrect: false }
+                ]
+            },
+            
+            // Math (1-100) (11-20)
+            {
+                type: "Math 🔢",
+                question: "What is twenty plus fifteen? (20 + 15)",
+                options: [
+                    { text: "thirty-five", isCorrect: true },
+                    { text: "twenty-five", isCorrect: false },
+                    { text: "forty", isCorrect: false },
+                    { text: "fifty", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "What is one hundred minus ten? (100 - 10)",
+                options: [
+                    { text: "eighty", isCorrect: false },
+                    { text: "ninety", isCorrect: true },
+                    { text: "seventy", isCorrect: false },
+                    { text: "one hundred", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "Bahasa Inggris dari angka 73 adalah...",
+                options: [
+                    { text: "seventy-three", isCorrect: true },
+                    { text: "sixty-three", isCorrect: false },
+                    { text: "eighty-three", isCorrect: false },
+                    { text: "thirty-seven", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "You have 12 apples and buy 8 more. How many apples do you have?",
+                options: [
+                    { text: "twenty", isCorrect: true },
+                    { text: "nineteen", isCorrect: false },
+                    { text: "eighteen", isCorrect: false },
+                    { text: "twenty-one", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "What is fifty divided by two? (50 ÷ 2)",
+                options: [
+                    { text: "twenty", isCorrect: false },
+                    { text: "twenty-five", isCorrect: true },
+                    { text: "thirty", isCorrect: false },
+                    { text: "fifteen", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "Angka sebelum 'forty' adalah...",
+                options: [
+                    { text: "thirty-eight", isCorrect: false },
+                    { text: "thirty-nine", isCorrect: true },
+                    { text: "forty-one", isCorrect: false },
+                    { text: "forty-two", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "What is six times seven? (6 x 7)",
+                options: [
+                    { text: "forty", isCorrect: false },
+                    { text: "forty-two", isCorrect: true },
+                    { text: "forty-four", isCorrect: false },
+                    { text: "thirty-six", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "How do you say '88' in English?",
+                options: [
+                    { text: "eighty-eight", isCorrect: true },
+                    { text: "ninety-eight", isCorrect: false },
+                    { text: "eighty-nine", isCorrect: false },
+                    { text: "eighteen", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "What is ninety-nine plus one? (99 + 1)",
+                options: [
+                    { text: "eighty", isCorrect: false },
+                    { text: "ninety", isCorrect: false },
+                    { text: "one hundred", isCorrect: true },
+                    { text: "one thousand", isCorrect: false }
+                ]
+            },
+            {
+                type: "Math 🔢",
+                question: "Angka setelah 'twenty-nine' adalah...",
+                options: [
+                    { text: "twenty-eight", isCorrect: false },
+                    { text: "thirty", isCorrect: true },
+                    { text: "thirty-one", isCorrect: false },
+                    { text: "forty", isCorrect: false }
+                ]
+            }
+        ];
+
+        // State variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswering = false; // Mencegah klik ganda saat menunggu jeda
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const questionCategory = document.getElementById('question-category');
+        const questionCounter = document.getElementById('question-counter');
+        const progressBar = document.getElementById('progress-bar');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+
+        // Navigasi Tampilan
+        function showScreen(screenId) {
+            startScreen.classList.add('hidden');
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        // Mulai Kuis
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            isAnswering = false;
+            showScreen('quiz-screen');
+            loadQuestion();
+        }
+
+        // Memuat Soal Saat Ini
+        function loadQuestion() {
+            // Reset state
+            isAnswering = false;
+            optionsContainer.innerHTML = '';
+            
+            // Get current question data
+            const currentQ = quizData[currentQuestionIndex];
+            
+            // Update UI Header
+            questionCategory.innerText = currentQ.type;
+            questionCounter.innerText = `Soal ${currentQuestionIndex + 1} / ${quizData.length}`;
+            
+            // Update Progress Bar
+            const progressPercentage = ((currentQuestionIndex) / quizData.length) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+
+            // Hapus animasi sebelumnya lalu tambahkan lagi agar reset
+            questionText.classList.remove('fade-in');
+            void questionText.offsetWidth; // trigger reflow
+            questionText.classList.add('fade-in');
+            
+            // Update Text
+            questionText.innerText = currentQ.question;
+
+            // Generate Options
+            currentQ.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn w-full bg-white border-2 border-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-xl text-left text-lg hover:border-blue-400 hover:bg-blue-50 focus:outline-none';
+                
+                // Prefix A, B, C, D
+                const prefix = String.fromCharCode(65 + index);
+                button.innerHTML = `<span class="inline-block w-8 h-8 text-center leading-8 bg-gray-100 rounded-full mr-3 text-sm text-gray-500">${prefix}</span> ${option.text}`;
+                
+                button.onclick = () => selectOption(button, option.isCorrect);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        // Menangani Pemilihan Jawaban
+        function selectOption(selectedButton, isCorrect) {
+            if (isAnswering) return;
+            isAnswering = true; // Kunci input sementara
+
+            const allButtons = optionsContainer.querySelectorAll('button');
+            
+            // Disable all buttons to prevent multiple clicks
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('cursor-not-allowed', 'opacity-80');
+                btn.classList.remove('hover:border-blue-400', 'hover:bg-blue-50');
+            });
+
+            // Warnai tombol yang dipilih
+            if (isCorrect) {
+                selectedButton.classList.add('correct-answer');
+                score++;
+            } else {
+                selectedButton.classList.add('wrong-answer');
+                
+                // Cari dan tunjukkan jawaban yang benar (opsional, agar anak belajar)
+                const currentQ = quizData[currentQuestionIndex];
+                allButtons.forEach((btn, index) => {
+                    if(currentQ.options[index].isCorrect) {
+                        btn.classList.add('border-green-500', 'bg-green-50', 'text-green-700');
+                    }
+                });
+            }
+
+            // Tunggu 1 detik lalu lanjut soal
+            setTimeout(() => {
+                currentQuestionIndex++;
+                
+                if (currentQuestionIndex < quizData.length) {
+                    loadQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1000);
+        }
+
+        // Tampilkan Layar Skor
+        function showResults() {
+            showScreen('result-screen');
+            
+            // Set final progress bar to 100% just to complete the look behind scenes
+            progressBar.style.width = '100%';
+            
+            const scorePercentage = Math.round((score / quizData.length) * 100);
+            
+            document.getElementById('final-score').innerText = `${scorePercentage}%`;
+            document.getElementById('score-details').innerText = `Benar ${score} dari ${quizData.length} soal`;
+
+            const emojiEl = document.getElementById('result-emoji');
+            const messageEl = document.getElementById('result-message');
+
+            if (scorePercentage === 100) {
+                emojiEl.innerText = '🤩🏆';
+                messageEl.innerText = 'Sempurna! Kamu luar biasa!';
+            } else if (scorePercentage >= 80) {
+                emojiEl.innerText = '😎🌟';
+                messageEl.innerText = 'Hebat banget! Pertahankan!';
+            } else if (scorePercentage >= 60) {
+                emojiEl.innerText = '👍😊';
+                messageEl.innerText = 'Kerja bagus, yuk belajar sedikit lagi!';
+            } else {
+                emojiEl.innerText = '💪📚';
+                messageEl.innerText = 'Jangan menyerah, ayo coba lagi!';
+            }
+        }
+
+        // Mengulang Kuis
+        function resetQuiz() {
+            startScreen.classList.remove('hidden');
+            resultScreen.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
